@@ -5,7 +5,7 @@ namespace GeekTrust
     public class Bank
     {
         public string Name {get; set;}
-        public List<Customer> Customers = new List<Customer>();
+        private List<Customer> Customers = new List<Customer>();
         public Bank(string bankName)
         {
             this.Name = bankName;

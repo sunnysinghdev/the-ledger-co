@@ -7,6 +7,7 @@ namespace GeekTrust
     {
         public string Name { get; set; }
         public int Amount { get; set; }
+        int TotalAmount { get; set; }
         int EMIAmount { get; set; }
         int principal = 0;
         int years = 0;
@@ -21,8 +22,9 @@ namespace GeekTrust
             this.principal = principal;
             this.years = years;
             this.rate = rate;
-            Amount = (int)Math.Ceiling((double)(principal + (principal * years * rate / 100)));
+            Amount =  principal + (int)Math.Ceiling((double)(principal * years * rate / 100));
             EMIAmount = (int)Math.Ceiling((double)(Amount / (double)(years * Constants.TOTAL_MONTH)));
+            //TotalAmount = EMIAmount * this.years * Constants.TOTAL_MONTH;
         }
         public void AddPayment(int lumpSumAmount, int emiCount)
         {
@@ -31,7 +33,7 @@ namespace GeekTrust
                 paymentHistory.Add(emiCount, lumpSumAmount);
             }
         }
-        public int GetBalance(int emiCount)
+        private int GetBalance(int emiCount)
         {
             int balance = 0;
             balance = Amount - (EMIAmount * emiCount);
@@ -39,6 +41,11 @@ namespace GeekTrust
         }
         public int GetAmountPaid(int emiCount)
         {
+            int remainingEmiCount = GetRemainingEMI(emiCount);
+            if (remainingEmiCount <= 0)
+            {
+                return Amount;
+            }
             return EMIAmount * emiCount + GetLumpSumAmountPaid(emiCount);
         }
         private int GetLumpSumAmountPaid(int emiCount)
@@ -59,7 +66,9 @@ namespace GeekTrust
         }
         public int GetRemainingEMI(int emiCount)
         {
-            return (years * Constants.TOTAL_MONTH) - emiCount - GetLumpSumAmountPaid(emiCount) / EMIAmount;
+            //int total = (years * Constants.TOTAL_MONTH) - emiCount - GetLumpSumAmountPaid(emiCount) / EMIAmount);
+            int total = (int)Math.Ceiling((double)(Amount - GetLumpSumAmountPaid(emiCount) - (EMIAmount * emiCount)) / (double)EMIAmount);
+            return total > -1 ? total : 0;
         }
         private int GetTotalEMICount(int emiCount)
         {
