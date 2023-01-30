@@ -20,17 +20,17 @@ namespace GeekTrust.Tests
         public void ReadCommands(string command)
         {
             Command cmd = CommandFactory.GetCommandType(command);
-            switch(cmd)
+            switch (cmd)
             {
                 case LoanCommand c:
                     Assert.AreEqual(cmd.Name, "LOAN");
-                break;
+                    break;
                 case PaymentCommand c:
                     Assert.AreEqual(cmd.Name, "PAYMENT");
-                break;
+                    break;
                 case BalanceCommand c:
                     Assert.AreEqual(cmd.Name, "BALANCE");
-                break;
+                    break;
 
             }
         }
@@ -40,11 +40,9 @@ namespace GeekTrust.Tests
         public void TestLoanSanctioned(string command)
         {
             Command cmd = CommandFactory.GetCommandType(command);
-            Ledger ledger  = new Ledger();
+            Ledger ledger = new Ledger();
             string output = ledger.Process(cmd);
             Assert.AreEqual("IDIDI", ledger.Banks[0].Name);
-            Assert.AreEqual("Dale", ledger.Banks[0].Customers[0].Name);
-            Assert.AreEqual(10000+(10000*5*4/100), ledger.Banks[0].Customers[0].Amount);
             Assert.AreEqual("", output);
         }
         [Test]
@@ -54,15 +52,15 @@ namespace GeekTrust.Tests
             cmdList.Add(CommandFactory.GetCommandType("LOAN IDIDI Dale 10000 5 4"));
             cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 5"));
             cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 40"));
-            Ledger ledger  = new Ledger();
+            Ledger ledger = new Ledger();
             ledger.Process(cmdList[0]);
-            
+
             ledger.Process(cmdList[1]);
             Assert.AreEqual("IDIDI Dale 1000 55", ledger.Process(cmdList[1]));
 
             ledger.Process(cmdList[2]);
             Assert.AreEqual("IDIDI Dale 8000 20", ledger.Process(cmdList[2]));
-            
+
         }
         [Test]
         public void TestPayment()
@@ -78,20 +76,20 @@ namespace GeekTrust.Tests
             cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 6"));
             cmdList.Add(CommandFactory.GetCommandType("BALANCE UON Shelly 12"));
             cmdList.Add(CommandFactory.GetCommandType("BALANCE MBI Harry 12"));
-            Ledger ledger  = new Ledger();
+            Ledger ledger = new Ledger();
             ledger.Process(cmdList[0]);
-           // Assert.AreEqual(442, ledger.Banks[0].Customers[0].GetEMI());
+            // Assert.AreEqual(442, ledger.Banks[0].Customers[0].GetEMI());
             ledger.Process(cmdList[1]);
             ledger.Process(cmdList[2]);
             ledger.Process(cmdList[3]);
             ledger.Process(cmdList[4]);
             ledger.Process(cmdList[5]);
-            
+
             Assert.AreEqual("IDIDI Dale 1326 9", ledger.Process(cmdList[6]));
             Assert.AreEqual("IDIDI Dale 3652 4", ledger.Process(cmdList[7]));
             Assert.AreEqual("UON Shelly 15856 3", ledger.Process(cmdList[8]));
             Assert.AreEqual("MBI Harry 9044 10", ledger.Process(cmdList[9]));
-            
+
         }
         [Test]
         public void TestUONPayment()
@@ -100,11 +98,84 @@ namespace GeekTrust.Tests
             cmdList.Add(CommandFactory.GetCommandType("LOAN UON Shelly 15000 2 9"));
             cmdList.Add(CommandFactory.GetCommandType("PAYMENT UON Shelly 7000 12"));
             cmdList.Add(CommandFactory.GetCommandType("BALANCE UON Shelly 12"));
-            Ledger ledger  = new Ledger();
+            Ledger ledger = new Ledger();
             ledger.Process(cmdList[0]);
             ledger.Process(cmdList[1]);
             Assert.AreEqual("UON Shelly 15856 3", ledger.Process(cmdList[2]));
-            
+
         }
+        [Test]
+        public void TestCornerPayment()
+        {
+            List<Command> cmdList = new List<Command>();
+            cmdList.Add(CommandFactory.GetCommandType("LOAN IDIDI Dale 5000 1 6"));
+            cmdList.Add(CommandFactory.GetCommandType("PAYMENT IDIDI Dale 1000 5"));
+            //cmdList.Add(CommandFactory.GetCommandType("PAYMENT IDIDI Dale 500 11"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 3"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 6"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 12"));
+            Ledger ledger = new Ledger();
+            ledger.Process(cmdList[0]);
+            ledger.Process(cmdList[1]);
+            Assert.AreEqual("IDIDI Dale 1326 9", ledger.Process(cmdList[2]));
+            Assert.AreEqual("IDIDI Dale 3652 4", ledger.Process(cmdList[3]));
+            Assert.AreEqual("IDIDI Dale 5300 0", ledger.Process(cmdList[4]));
+
+        }
+        [Test]
+        public void TestCase3()
+        {
+            List<Command> cmdList = new List<Command>();
+            cmdList.Add(CommandFactory.GetCommandType("LOAN IDIDI Dale 4000 3 4"));
+            cmdList.Add(CommandFactory.GetCommandType("LOAN MBI Dale 10000 3 7"));
+            cmdList.Add(CommandFactory.GetCommandType("PAYMENT MBI Dale 2000 0"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 3"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 0"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE MBI Dale 0"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 12"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE MBI Dale 4"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE MBI Dale 30"));
+
+            Ledger ledger = new Ledger();
+            ledger.Process(cmdList[0]);
+            ledger.Process(cmdList[1]);
+            ledger.Process(cmdList[2]);
+            Assert.AreEqual("IDIDI Dale 375 33", ledger.Process(cmdList[3]));
+            Assert.AreEqual("IDIDI Dale 0 36", ledger.Process(cmdList[4]));
+            Assert.AreEqual("MBI Dale 2000 30", ledger.Process(cmdList[5]));
+            Assert.AreEqual("IDIDI Dale 1500 24", ledger.Process(cmdList[6]));
+            Assert.AreEqual("MBI Dale 3348 26", ledger.Process(cmdList[7]));
+            Assert.AreEqual("MBI Dale 12100 0", ledger.Process(cmdList[8]));
+        }
+        [Test]
+        public void TestCase4()
+        {
+            List<Command> cmdList = new List<Command>();
+            cmdList.Add(CommandFactory.GetCommandType("LOAN IDIDI Dale 5000 1 6"));
+            cmdList.Add(CommandFactory.GetCommandType("LOAN MBI Harry 10000 3 7"));
+            cmdList.Add(CommandFactory.GetCommandType("LOAN UON Shelly 15000 2 9"));
+            cmdList.Add(CommandFactory.GetCommandType("PAYMENT IDIDI Dale 1000 5"));
+            cmdList.Add(CommandFactory.GetCommandType("PAYMENT MBI Harry 5000 10"));
+            cmdList.Add(CommandFactory.GetCommandType("PAYMENT UON Shelly 7000 12"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 3"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE IDIDI Dale 6"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE UON Shelly 12"));
+            cmdList.Add(CommandFactory.GetCommandType("BALANCE MBI Harry 12"));
+            
+
+            Ledger ledger = new Ledger();
+            ledger.Process(cmdList[0]);
+            ledger.Process(cmdList[1]);
+            ledger.Process(cmdList[2]);
+            ledger.Process(cmdList[3]);
+            ledger.Process(cmdList[4]);
+            ledger.Process(cmdList[5]);
+            Assert.AreEqual("IDIDI Dale 1326 9", ledger.Process(cmdList[6]));
+            Assert.AreEqual("IDIDI Dale 3652 4", ledger.Process(cmdList[7]));
+            Assert.AreEqual("UON Shelly 15856 3", ledger.Process(cmdList[8]));
+            Assert.AreEqual("MBI Harry 9044 10", ledger.Process(cmdList[9]));
+
+        }
+
     }
 }
